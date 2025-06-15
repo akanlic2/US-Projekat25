@@ -6,7 +6,7 @@ import tt24
 # Pocetni debounce
 time.sleep(0.05)
 
-#TFT displej
+# Pinovi za TFT displej 
 TFT_CLK_PIN = 18
 TFT_MOSI_PIN = 19
 TFT_MISO_PIN = 16
@@ -14,6 +14,7 @@ TFT_CS_PIN = 17
 TFT_RST_PIN = 20
 TFT_DC_PIN = 15
 
+# Inicijalizacija displeja i postavljanje SPI komunikacije
 spi = SPI(
     0,
     baudrate=62500000,
@@ -32,6 +33,7 @@ display = ILI9341(
 
 display.init()
 
+# Funkcija za ispis na ekran displeja
 def displayMessage(msg):
     display.erase()
     display.set_font(tt24)
@@ -56,10 +58,11 @@ keypad = [
     ['*', '0', '#', 'D']
 ]
 
-# PINOVI
+# Inicijalizacija ulaza i izlaza
 senzor = Pin(7, Pin.IN)
 buzzer = PWM(Pin(28))
 
+# Postavljanje parametara PWM izlaznog signala -> Buzzer na pocetku iskljucen!
 buzzer.freq(2300)
 buzzer.duty_u16(0)
 
@@ -67,18 +70,22 @@ buzzer.duty_u16(0)
 zelena = Pin(12, Pin.OUT)  
 crvena = Pin(14, Pin.OUT)
 
+# Inicijalizacija tastera i postavljanje internog otpornika
 taster1 = Pin(10, Pin.IN, Pin.PULL_DOWN)
 taster2 = Pin(13, Pin.IN, Pin.PULL_DOWN)
 
-# PIN konfiguracija
+# Inicijalna PIN konfiguracija
 VALID_PIN = "3110"
 MAX_ATTEMPTS = 3
 LOCK_TIME = 30  # sekundi
 attempts = 0
+
+# FLAG-ovi sistema za oznacavanje moda
 pasivni_mod = True
 promjenaPinaFlag = False
 
 
+# Funkcija za LED indikaciju rezima rada 
 def led_mod(pasivni):
     if pasivni:
         zelena.on()
@@ -89,6 +96,7 @@ def led_mod(pasivni):
         crvena.on()
 
 
+# Funkcija za ucitavanje pritisnutog tastera
 def scan_keypad():
     for row in range(4):
  # Aktiviraj samo trenutni red
@@ -104,17 +112,19 @@ def scan_keypad():
     return None
 
 
+# Funkcija za unos 4-cifrenog PIN koda
 def enter_pin():
     entered = ""
     while len(entered) < 4:
         key = scan_keypad()
         if key and key in '0123456789':
             entered += key
-            displayMessage("Unos: " + "*" *len(entered))# maskirani unos
-    print()# novi red
+            displayMessage("Unos: " + "*" *len(entered)) # maskirani unos ****
+    print() # novi red
     return entered
 
 
+# Funkcija koja se poziva detekcijom pokreta
 def deaktivacija():
     global attempts, pasivni_mod
 
@@ -143,11 +153,13 @@ def deaktivacija():
     time.sleep(0.05)
 
 
+# Handler funkcija za pritisak na taster2
 def promijeni_pin(pin):
     global promjenaPinaFlag
     promjenaPinaFlag = True
 
-   
+
+# Funkcija promjene PIN koda
 def promjenaPina():
     global VALID_PIN,promjenaPinaFlag,pasivni_mod
 
@@ -180,37 +192,41 @@ def promjenaPina():
        
 
 
-
+# Handler funkcija za pritisak na taster1
 def aktivniMod(pin):
     global pasivni_mod
     pasivni_mod = False
    
 
-   
+# Sistem krece iz pasivnog moda
 led_mod(True)
 displayMessage("PASIVNI MOD")
 
+# Koristenje sistema prekida za ispravan rezim rada
 taster1.irq(handler = aktivniMod,trigger = Pin.IRQ_RISING)
 taster2.irq(handler = promijeni_pin,trigger = Pin.IRQ_RISING)
 
 while True:
 
+    # Rezim promjene PIN koda se moze pozvati samo iz pasivnog moda
     if pasivni_mod and promjenaPinaFlag:
         displayMessage("PROMJENA PINA POKRENUTA...")
         promjenaPina()
-    elif not pasivni_mod:
+
+    elif not pasivni_mod: # Sistem u aktivnom modu, ceka detekciju pokreta       
         displayMessage("AKTIVNI MOD")
         led_mod(pasivni_mod)
+
         while True:
             if senzor.value() == 1:
                 # Ako je alarm aktiviran i senzor detektuje pokret
                 deaktivacija()
                 time.sleep(0.05)
                 displayMessage("PASIVNI MOD")
-                promjenaPinaFlag=False
+                promjenaPinaFlag = False  # Ne dozvoljava promjenu PIN-a iz aktivnog moda
                 break
 
-        time.sleep(0.05)
+        time.sleep(0.05)    
 
    
     time.sleep(0.005)
