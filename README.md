@@ -30,7 +30,7 @@ Ovaj projekat implementira **alarmni sistem** korištenjem Raspberry Pi Pico, TF
 - Senzor pokreta (PIR)
 - Buzzer (PWM)
 - 2 fizička tastera za aktivaciju i promjenu PIN-a
-- LED diode (crvena i zelena)
+- LED diode za indikaciju moda (crvena i zelena)
 
 ## Powered by: 
 
